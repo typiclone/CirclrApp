@@ -16,6 +16,7 @@
 		6B0586962C6C38E2007FF9F3 /* CirclrTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0586952C6C38E2007FF9F3 /* CirclrTests.swift */; };
 		6B0586A02C6C38E2007FF9F3 /* CirclrUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B05869F2C6C38E2007FF9F3 /* CirclrUITests.swift */; };
 		6B0586A22C6C38E2007FF9F3 /* CirclrUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0586A12C6C38E2007FF9F3 /* CirclrUITestsLaunchTests.swift */; };
+		6BD586C72C77FB5500C78A8E /* CircularProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BD586C62C77FB5500C78A8E /* CircularProgressView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +50,7 @@
 		6B05869B2C6C38E2007FF9F3 /* CirclrUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CirclrUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6B05869F2C6C38E2007FF9F3 /* CirclrUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CirclrUITests.swift; sourceTree = "<group>"; };
 		6B0586A12C6C38E2007FF9F3 /* CirclrUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CirclrUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		6BD586C62C77FB5500C78A8E /* CircularProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularProgressView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +108,7 @@
 				6B0586872C6C38E1007FF9F3 /* Assets.xcassets */,
 				6B0586892C6C38E1007FF9F3 /* LaunchScreen.storyboard */,
 				6B05868C2C6C38E1007FF9F3 /* Info.plist */,
+				6BD586C62C77FB5500C78A8E /* CircularProgressView.swift */,
 			);
 			path = Circlr;
 			sourceTree = "<group>";
@@ -260,6 +263,7 @@
 			files = (
 				6B0586832C6C38E0007FF9F3 /* ViewController.swift in Sources */,
 				6B05867F2C6C38E0007FF9F3 /* AppDelegate.swift in Sources */,
+				6BD586C72C77FB5500C78A8E /* CircularProgressView.swift in Sources */,
 				6B0586812C6C38E0007FF9F3 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -445,6 +449,9 @@
 				DEVELOPMENT_TEAM = SX7WGHX7PV;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Circlr/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Need ur location gang";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Need ur location gang";
+				INFOPLIST_KEY_NSMotionUsageDescription = "Can I acess ur motion bruh";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -473,6 +480,9 @@
 				DEVELOPMENT_TEAM = SX7WGHX7PV;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Circlr/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Need ur location gang";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Need ur location gang";
+				INFOPLIST_KEY_NSMotionUsageDescription = "Can I acess ur motion bruh";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
