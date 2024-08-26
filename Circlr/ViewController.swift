@@ -265,7 +265,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             self.circularProgressView.layer.opacity = 1.0
             self.counterCircularProgressView.layer.opacity = 0.0
         }*/
-        //print(indicatorAngle)
+       // print(indicatorAngle)
         
         return degrees
     }
@@ -278,7 +278,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     }
     func resetCircleData(){
         //self.circularProgressView.resetProgress(animated: true, duration: 0.5, clockwise: clockwise)
-        highestDegreeInCurrentLap = 0
+        if clockwise == true{
+            highestDegreeInCurrentLap = 0
+        }
+        else{
+            highestDegreeInCurrentLap = 360
+        }
+        
         indicatorAngle = 0
     }
     func checkForDirection(){
