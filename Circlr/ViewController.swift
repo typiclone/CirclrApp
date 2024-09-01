@@ -23,13 +23,15 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     var firstCheckPointReached = false
     var circularProgressView: CircularProgressView!
     var counterCircularProgressView: CircularProgressView!
-    let distanceLabel: UILabel = {
+    var dayEnumerated = ["Monday": 1, "Tuesday": 2, "Wednesday": 3, "Thursday": 4, "Friday": 5, "Saturday": 6, "Sunday": 7]
+    /*let distanceLabel: UILabel = {
         let label = UILabel()
         label.text = "Distance: 0.0 meters"
         label.font = UIFont.systemFont(ofSize: 24)
         label.textAlignment = .center
         return label
-    }()
+    }()*/
+    var firstTurnPoint = 0
     var clockwise = false
     let lapLabel: UILabel = {
         let label = UILabel()
@@ -52,11 +54,56 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         button.titleLabel?.font = UIFont.systemFont(ofSize: 24)
         return button
     }()
-    
+    var lapArray = [0,0,0,0,0,0,0]
+    func checkIfFirstLoad(){
+        
+        print("hinterfield")
+        
+        var dayOfWeek = dayEnumerated[Date().dayOfWeek()!]
+        var currentTime = Date().timeIntervalSince1970
+        if defaults.integer(forKey: "startDay") == 0{
+            defaults.setValue(dayOfWeek, forKey: "startDay")
+            var endWeekTime = currentTime + 604800
+            defaults.setValue(endWeekTime, forKey: "endWeekTime")
+            defaults.setValue([0,0,0,0,0,0,0], forKey: "lapArray")
+            lapArray = [0,0,0,0,0,0,0]
+        }
+        else{
+            lapArray = defaults.array(forKey: "lapArray") as? [Int] ?? [0,0,0,0,0,0,0]
+            print("chinkz", lapArray)
+        }
+        
+        var endWeekTime = defaults.integer(forKey: "endWeekTime")
+        var lastOpenedTime = defaults.integer(forKey: "lastOpenedTime")
+        var lastOpenedDay = defaults.integer(forKey: "lastOpenedDay")
+        if lastOpenedTime != 0{
+            if (dayOfWeek != lastOpenedDay){
+                defaults.setValue(0, forKey: "dailyLaps")
+            }
+            if Int(currentTime) > endWeekTime{
+                print(currentTime)
+                print(endWeekTime)
+                print("zingo")
+                defaults.setValue(0, forKey: "dailyLaps")
+                defaults.setValue(0, forKey: "weeklyLaps")
+                defaults.setValue([0,0,0,0,0,0,0], forKey: "lapArray")
+                lapArray = [0,0,0,0,0,0,0]
+                defaults.setValue(currentTime + 604800, forKey: "endWeekTime")
+                defaults.setValue(dayOfWeek, forKey: "startDay")
+            }
+            
+        }
+        defaults.setValue(currentTime, forKey: "lastOpenedTime")
+        defaults.setValue(dayOfWeek, forKey: "lastOpenedDay")
+        defaults.setValue(Date().timeIntervalSince1970, forKey: "lastDayOpened")
+        
+    }
     override func viewDidLoad() {
         super.viewDidLoad()
+        checkIfFirstLoad()
         smooth = [Double]()
         setupUI()
+        origList = [Int]()
         setupLocationManager()
         setupMotionManager()
         last2Checkpoints = []
@@ -73,23 +120,164 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
        
         //counterCircularProgressView.mirrorHorizontally()
         view.addSubview(counterCircularProgressView)*/
-               
+            
                // Start updating the circle
         updateCircleProgress()
+        
+        countdownLabel = UILabel()
+               countdownLabel.textAlignment = .center
+               countdownLabel.textColor = .white
+               countdownLabel.font = UIFont.systemFont(ofSize: 100)
+               countdownLabel.alpha = 0.0  // Start invisible
+               countdownLabel.translatesAutoresizingMaskIntoConstraints = false
+               
+               view.addSubview(countdownLabel)
+               
+               // Center the label in the view
+               NSLayoutConstraint.activate([
+                   countdownLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                   countdownLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+               ])
+        
+        
     }
+   
+        
+        @objc func updateCountdown() {
+            if secondsRemaining > 0 {
+                countdownLabel.text = "\(secondsRemaining)"
+                animateCountdownLabel()
+                secondsRemaining -= 1
+            } else {
+                countdownTimer?.invalidate()
+                countdownLabel.text = ""
+                performFunctionAfterCountdown()
+            }
+        }
+        
+        func animateCountdownLabel() {
+            countdownLabel.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+            countdownLabel.alpha = 0.0
+            
+            UIView.animate(withDuration: 0.5, animations: {
+                self.countdownLabel.alpha = 1.0
+                self.countdownLabel.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
+            }) { _ in
+                UIView.animate(withDuration: 0.5, animations: {
+                    self.countdownLabel.alpha = 0.0
+                    self.countdownLabel.transform = CGAffineTransform(scaleX: 2.0, y: 2.0)
+                })
+            }
+        }
+        
+        func performFunctionAfterCountdown() {
+            // Function to call after countdown ends
+            setStartButton.isUserInteractionEnabled = true
+            if let currentLocation = locationManager.location {
+                startingLocation = currentLocation
+                lapCounter = 0 // Reset lap counter
+                //distanceLabel.text = "Starting point set"
+                lapLabel.text = "Laps: \(lapCounter)"
+                firstCheckPointReached = false
+                initialDegree = Int(degrees)
+                indicatorAngle = 0
+                lastSpeed = 0
+                firstTurnPoint = 0
+                tracking = true
+                currentCheckpoint = 0
+                currentCheckpointSelected = 0
+                highestDegreeInCurrentLap = 0
+                var baseCount = initialDegree
+                
+                for i in 0..<checkpoints.count{
+                    baseCount = baseCount + 90
+                    if baseCount > 360{
+                        baseCount = baseCount - 360
+                    }
+                    checkpoints[i] = baseCount
+                }
+                updateCheckPointCounterLabel()
+                updateLapCount()
+                print("lordy \(checkpoints)")
+            }
+            print("Countdown complete!")
+        }
+    var lastSpeed = 0
     var highestDegreeInCurrentLap = 0
+    var lastDegree = 0.0
+    var origList:[Int]?
+    var tracking = true
+    var countdownLabel: UILabel!
+        var countdownTimer: Timer?
+        var secondsRemaining = 5
+    var testing = true
+    func checkInBoundsLaterTimer(highest: Int){
+        
+        Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [self] timer in
+            if tracking == true{
+                if inBounds(int1: highest, int2: highest, degrees: Int(indicatorAngle)){
+                    tracking = true
+                    //print("true track \(highest) \(indicatorAngle) ||||| \(highestDegreeInCurrentLap)")
+                }
+                else{
+                    //print("false track \(highest) \(indicatorAngle) ||||| \(highestDegreeInCurrentLap)")
+                    
+                    tracking = false
+                    trackableDone = false
+                    Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [self] timers in
+                        trackableDone = true
+                    }
+                }
+            }
+            
+            
+        }
+    }
     func updateCircleProgress() {
             // Simulate real-time updates
-        Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [self] timer in
-          
-                    
-            if firstCheckPointReached == true{
-                print(highestDegreeInCurrentLap)
-                self.circularProgressView.setProgress(to: CGFloat(highestDegreeInCurrentLap), didFinish: firstCheckPointReached, clockwise: clockwise)
+        Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true){ [self] timer in
+            
+            yaws += indicatorAngle - lastDegree
+            if Int(indicatorAngle) - Int(lastDegree) < -100{
+                origList?.append(Int(360 - lastDegree + indicatorAngle))
+            }
+            else if Int(indicatorAngle) - Int(lastDegree) > 100{
+                origList?.append(Int(360 - indicatorAngle + lastDegree))
             }
             else{
-                self.circularProgressView.setProgress(to: CGFloat(indicatorAngle), didFinish: firstCheckPointReached, clockwise: clockwise)
+                origList?.append(Int(indicatorAngle) - Int(lastDegree))
             }
+            yawCounter += 1
+            //print(origList)
+            if origList?.count == 3{
+                lastSpeed = ((origList?.reduce(0, +))!)/3
+                if firstCheckPointReached{
+                    if firstTurnPoint == 0{
+                        firstTurnPoint = lastSpeed
+                    }
+                    //print("lastSpeed", lastSpeed, "firstTurn", firstTurnPoint, "indic", indicatorAngle, "highest", highestDegreeInCurrentLap)
+                    if lastSpeed - 2 >= firstTurnPoint{
+                        print("gomenasai")
+                        checkInBoundsLaterTimer(highest: highestDegreeInCurrentLap)
+                    }
+                }
+               // print(lastSpeed)
+                origList?.remove(at: 0)
+                yawCounter = 0
+            }
+            lastDegree = indicatorAngle
+        }
+        Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [self] timer in
+            if initialDegree != -1{
+                if firstCheckPointReached == true{
+                    //print(highestDegreeInCurrentLap)
+                    self.circularProgressView.setProgress(to: CGFloat(highestDegreeInCurrentLap), didFinish: firstCheckPointReached, clockwise: clockwise)
+                }
+                else{
+                    self.circularProgressView.setProgress(to: CGFloat(indicatorAngle), didFinish: firstCheckPointReached, clockwise: clockwise)
+                }
+            }
+            
                 //self.circularProgressView.setProgress(to: Float(CGFloat(self.indicatorAngle/360.0)))
                 //self.counterCircularProgressView.setProgress(to: Float(CGFloat(self.indicatorAngle/360.0)))
                 
@@ -97,22 +285,22 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             }
         }
     func setupUI() {
-        view.addSubview(distanceLabel)
+        //view.addSubview(distanceLabel)
         view.addSubview(lapLabel)
         view.addSubview(checkpointLabel)
         view.addSubview(setStartButton)
         
-        distanceLabel.translatesAutoresizingMaskIntoConstraints = false
+        //distanceLabel.translatesAutoresizingMaskIntoConstraints = false
         lapLabel.translatesAutoresizingMaskIntoConstraints = false
         checkpointLabel.translatesAutoresizingMaskIntoConstraints = false
         setStartButton.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
-            distanceLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            distanceLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            //distanceLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            //distanceLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             
             lapLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            lapLabel.topAnchor.constraint(equalTo: distanceLabel.bottomAnchor, constant: 20),
+            lapLabel.topAnchor.constraint(equalTo: view.centerYAnchor, constant: 120),
             
             checkpointLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             checkpointLabel.topAnchor.constraint(equalTo: lapLabel.bottomAnchor, constant: 20),
@@ -123,14 +311,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     }
     var angleY: Double = 0.0
     var lastTimestamp: TimeInterval?
-
+    var previousYawDegrees: Double = 0.0
+    var yawRate: Double = 0.0
     func setupLocationManager() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
     }
-    
+    var yawCounter = 0
+    var yaws = 0.0
     func setupMotionManager() {
         if motionManager.isDeviceMotionAvailable {
             motionManager.deviceMotionUpdateInterval = 0.01
@@ -141,6 +331,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
                 let yawDegrees = self.calculateYawDegrees(from: motion.attitude.quaternion)
                 
                 
+                self.yawRate = (yawDegrees - self.previousYawDegrees) / motionManager.deviceMotionUpdateInterval
+                //print(abs(yawRate))
+               
+                self.previousYawDegrees = yawDegrees
                 
                 DispatchQueue.main.async { [self] in
                     self.degrees = yawDegrees
@@ -278,13 +472,15 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     }
     func resetCircleData(){
         //self.circularProgressView.resetProgress(animated: true, duration: 0.5, clockwise: clockwise)
+        updateUserDefaults()
         if clockwise == true{
-            highestDegreeInCurrentLap = 0
+            highestDegreeInCurrentLap = 3
         }
         else{
             highestDegreeInCurrentLap = 360
         }
-        
+        tracking = true
+        lastSpeed = 0
         indicatorAngle = 0
     }
     func checkForDirection(){
@@ -380,6 +576,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             
         }
     }
+    var trackableDone = true
     func reverseCheckPoint(){
         var temp1 = checkpoints[0]
         checkpoints[0] = checkpoints[2]
@@ -394,36 +591,87 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             //print("konichiwa ", checkpoints)
         }
         else{
+            /*if inBounds(int1: highestDegreeInCurrentLap, int2: highestDegreeInCurrentLap, degrees: Int(indicatorAngle)){
+                tracking = true
+            }*/
+            //print("sumaaa \(inBounds(int1: highestDegreeInCurrentLap - 10, int2: highestDegreeInCurrentLap + 10, degrees: Int(indicatorAngle)))")
             if clockwise == true && abs(Int(indicatorAngle) - highestDegreeInCurrentLap) <= 30{
-                highestDegreeInCurrentLap = max(highestDegreeInCurrentLap, Int(indicatorAngle))
+                if tracking == true{
+                    highestDegreeInCurrentLap = max(highestDegreeInCurrentLap, Int(indicatorAngle))
+                    if highestDegreeInCurrentLap == 359{
+                        highestDegreeInCurrentLap = 0
+                    }
+                }
+                if tracking == false && inBounds(int1: highestDegreeInCurrentLap - 10, int2: highestDegreeInCurrentLap + 10, degrees: Int(indicatorAngle)) && trackableDone{
+                    print("tracked true")
+                    tracking = true
+                    highestDegreeInCurrentLap = max(highestDegreeInCurrentLap, Int(indicatorAngle))
+                    if highestDegreeInCurrentLap == 359{
+                        highestDegreeInCurrentLap = 0
+                    }
+                }
+                /*else if tracking == true{
+                    highestDegreeInCurrentLap = max(highestDegreeInCurrentLap, Int(indicatorAngle))
+                }*/
             }
             else if abs(Int(indicatorAngle) - highestDegreeInCurrentLap) <= 30{
-                highestDegreeInCurrentLap = min(highestDegreeInCurrentLap, Int(indicatorAngle))
-            }
-            var lowerBound = checkpoints[currentCheckpoint] - 10
-            var upperBound = checkpoints[currentCheckpoint] + 10
-            
-            if lowerBound < 0 {
-                lowerBound = 360 + lowerBound
-            }
-            if upperBound > 360 {
-                upperBound = upperBound - 360
-            }
-            //print(lowerBound, upperBound)
-            if lowerBound < upperBound{
-                if Int(degrees) >= lowerBound && Int(degrees) <= upperBound {
-                    updateCheckpointCounter()
+                if tracking == true{
+                    highestDegreeInCurrentLap = min(highestDegreeInCurrentLap, Int(indicatorAngle))
+                }
+                if tracking == false && inBounds(int1: highestDegreeInCurrentLap - 10, int2: highestDegreeInCurrentLap + 10, degrees: Int(indicatorAngle)) && trackableDone{
+                    highestDegreeInCurrentLap = min(highestDegreeInCurrentLap, Int(indicatorAngle))
+                    if highestDegreeInCurrentLap == 359{
+                        highestDegreeInCurrentLap = 0
+                    }
+                    tracking = true
                 }
             }
-            else if lowerBound > upperBound{
-                if (degrees >= 0 && Int(degrees) <= upperBound) || (Int(degrees) >= lowerBound && degrees <= 360){
-                    updateCheckpointCounter()
+            if tracking == true{
+                var lowerBound = checkpoints[currentCheckpoint] - 10
+                var upperBound = checkpoints[currentCheckpoint] + 10
+                
+                if lowerBound <= 0 {
+                    lowerBound = 360 + lowerBound
                 }
+                if upperBound >= 360 {
+                    upperBound = upperBound - 360
+                }
+                //print(lowerBound, upperBound)
+                if lowerBound < upperBound{
+                    if Int(degrees) >= lowerBound && Int(degrees) <= upperBound {
+                        updateCheckpointCounter()
+                    }
+                }
+                else if lowerBound > upperBound{
+                    if (degrees >= 0 && Int(degrees) <= upperBound) || (Int(degrees) >= lowerBound && degrees <= 360){
+                        updateCheckpointCounter()
+                    }
+                }
+                updateCheckPointCounterLabel()
+                updateLapCount()
             }
-            updateCheckPointCounterLabel()
-            updateLapCount()
         }
         
+    }
+    func inBounds(int1: Int, int2: Int, degrees: Int) -> Bool {
+        var lowerBound = int1 - 10
+        var upperBound = int2 + 10
+        
+        // Adjust bounds to handle circular wrapping
+        if lowerBound < 0 {
+            lowerBound += 360
+        }
+        if upperBound > 360 {
+            upperBound -= 360
+        }
+        
+        // Check if the range does not wrap around
+        if lowerBound <= upperBound {
+            return degrees >= lowerBound && degrees <= upperBound
+        } else {
+            // Check if the range wraps around the 0/360 boundary
+            return degrees >= lowerBound || degrees <= upperBound
+        }
     }
     func updateCheckpointCounter(){
         var newCheckpoint = 0
@@ -434,6 +682,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         //print(currentCheckpoint, newCheckpoint)
         if currentCheckpoint == 3 {
             lapCounter += 1
+            //updateUserDefaults()
             resetCircleData()
             currentCheckpoint = 0
         }
@@ -441,6 +690,44 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             currentCheckpoint += 1
         }
         generateLightHapticFeedback()
+    }
+    let defaults = UserDefaults.standard
+    func updateUserDefaults(){
+       
+    /*var sday = 5
+        for i in sday...7{
+            print(i)
+        }
+        for i in 1..<sday{
+            print(i)
+        }*/
+        
+        var totalies = defaults.integer(forKey: "totalLaps")
+        defaults.setValue(totalies + 1, forKey: "totalLaps")
+        var weeklies = defaults.integer(forKey: "weeklyLaps")
+        defaults.setValue(weeklies + 1, forKey: "weeklyLaps")
+        var dailies = defaults.integer(forKey: "dailyLaps")
+        defaults.setValue(dailies + 1, forKey: "dailyLaps")
+        
+        var currentDay = dayEnumerated[Date().dayOfWeek()!]
+        var startDay = defaults.integer(forKey: "startDay")
+        print(startDay, currentDay)
+        if currentDay! >= startDay{
+            lapArray[currentDay! - startDay] += 1
+        }
+        else{
+            lapArray[7 - startDay + currentDay! - 1] += 1
+        }
+        defaults.setValue(lapArray, forKey: "lapArray")
+        print("cosmic", lapArray)
+        
+        if let tabBarController = self.tabBarController {
+                    // Access the view controllers
+                    if let secondViewController = tabBarController.viewControllers?.first(where: { $0 is Analytics }) as? Analytics {
+                        // Do something with secondViewController
+                        secondViewController.updateValues()
+                    }
+                }
     }
     func processAccelerometerData(_ data: CMAccelerometerData) {
         // Handle accelerometer data
@@ -488,30 +775,18 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             // for lap detection or movement tracking
         }*/
     @objc func setStartingPoint() {
-        if let currentLocation = locationManager.location {
-            startingLocation = currentLocation
-            lapCounter = 0 // Reset lap counter
-            distanceLabel.text = "Starting point set"
-            lapLabel.text = "Laps: \(lapCounter)"
-            firstCheckPointReached = false
-            initialDegree = Int(degrees)
-            indicatorAngle = 0
-            currentCheckpoint = 0
-            currentCheckpointSelected = 0
-            highestDegreeInCurrentLap = 0
-            var baseCount = initialDegree
-            
-            for i in 0..<checkpoints.count{
-                baseCount = baseCount + 90
-                if baseCount > 360{
-                    baseCount = baseCount - 360
-                }
-                checkpoints[i] = baseCount
-            }
-            updateCheckPointCounterLabel()
-            updateLapCount()
-            print("lordy \(checkpoints)")
+        UIApplication.shared.isIdleTimerDisabled = true
+        if testing == false{
+            setStartButton.isUserInteractionEnabled = false
+            secondsRemaining = 5
+            countdownLabel.alpha = 0.0
+            countdownLabel.textColor = .label
+            countdownTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateCountdown), userInfo: nil, repeats: true)
         }
+        else{
+            performFunctionAfterCountdown()
+        }
+        
     }
     var smooth:[Double]?
     var averagedValue = 100.0
@@ -525,7 +800,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         
         if let startLocation = startingLocation {
             let distance = currentLocation.distance(from: startLocation)
-            distanceLabel.text = String(format: "Distance: %.2f meters", distance)
+            //distanceLabel.text = String(format: "Distance: %.2f meters", distance)
         }
         var speed: CLLocationSpeed = CLLocationSpeed()
         speed = locationManager.location?.speed ?? 0
@@ -534,5 +809,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("Failed to get user location: \(error.localizedDescription)")
+    }
+}
+extension Date {
+    func dayOfWeek() -> String? {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EEEE"
+        return dateFormatter.string(from: self).capitalized
+        // or use capitalized(with: locale) if you want
     }
 }
