@@ -57,7 +57,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     var lapArray = [0,0,0,0,0,0,0]
     func checkIfFirstLoad(){
         
-        print("hinterfield")
+       
         
         var dayOfWeek = dayEnumerated[Date().dayOfWeek()!]
         var currentTime = Date().timeIntervalSince1970
@@ -70,7 +70,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         }
         else{
             lapArray = defaults.array(forKey: "lapArray") as? [Int] ?? [0,0,0,0,0,0,0]
-            print("chinkz", lapArray)
+           
         }
         
         var endWeekTime = defaults.integer(forKey: "endWeekTime")
@@ -257,7 +257,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
                     }
                     //print("lastSpeed", lastSpeed, "firstTurn", firstTurnPoint, "indic", indicatorAngle, "highest", highestDegreeInCurrentLap)
                     if lastSpeed - 2 >= firstTurnPoint{
-                        print("gomenasai")
+                        
                         checkInBoundsLaterTimer(highest: highestDegreeInCurrentLap)
                     }
                 }
@@ -588,13 +588,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         
         if firstCheckPointReached == false{
             checkForDirection()
-            //print("konichiwa ", checkpoints)
+            
         }
         else{
             /*if inBounds(int1: highestDegreeInCurrentLap, int2: highestDegreeInCurrentLap, degrees: Int(indicatorAngle)){
                 tracking = true
             }*/
-            //print("sumaaa \(inBounds(int1: highestDegreeInCurrentLap - 10, int2: highestDegreeInCurrentLap + 10, degrees: Int(indicatorAngle)))")
+            
             if clockwise == true && abs(Int(indicatorAngle) - highestDegreeInCurrentLap) <= 30{
                 if tracking == true{
                     highestDegreeInCurrentLap = max(highestDegreeInCurrentLap, Int(indicatorAngle))
